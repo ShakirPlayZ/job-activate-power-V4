@@ -11,4 +11,4 @@ Have Fun
 # Installation:
 Clone or Download to "src/core/plugins":
 
-https://github.com/ShakirPlayZ/job-activate-power
+https://github.com/ShakirPlayZ/job-activate-power.git
