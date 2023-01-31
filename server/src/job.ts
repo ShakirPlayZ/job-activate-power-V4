@@ -12,35 +12,75 @@ import { CurrencyTypes } from '@AthenaShared/enums/currency';
 import { Athena } from '@AthenaServer/api/athena';
 import { ANIMATION_FLAGS } from '@AthenaShared/flags/animationFlags';
 import { distance2d } from '@AthenaShared/utility/vector';
+import { command } from '@AthenaServer/decorators/commands';
+import { LocaleController } from '@AthenaShared/locale/locale';
+import { PERMISSIONS } from '@AthenaShared/flags/permissionFlags';
+import { CONFIG_BLIPS_ON, CONFIG_POWER_OFF_AT_SERVER_START } from './config';
 
-//{"x":2864.176513671875,"y":1510.896484375,"z":24.56752586364746}
+const COMMAND_POWER_OFF = 'Turn Power Off';
+const COMMAND_POWER_ON = 'Turn Power On';
 const START_POINT = { x: 2864.176513671875, y: 1510.896484375, z: 23.66752586364746 };
 const TOTAL_DROP_OFFS = 2;
-let BlackoutState = 1;
-
+let BlackoutState = CONFIG_POWER_OFF_AT_SERVER_START;
 
 alt.on('playerConnect', (player) => {
-    if(BlackoutState === 1) {
-        alt.emitAllClients("blackouton");
-        alt.log(`Power is now Offline for everyone...`);
+    if (BlackoutState === 1) {
+        alt.emitAllClients('blackouton');
+        alt.log(`Shutdown City Power...`);
+    } else {
+        alt.log(`Default Power State set to ONLINE...`);
     }
 });
 
 export class ActivatePowerJob {
+    /**
+     * Turn Power Off
+     * @param player
+     * @private
+     */
+    @command('poweroff', LocaleController.get(COMMAND_POWER_OFF, '/poweroff'), PERMISSIONS.ADMIN)
+    private static powerOff(player: alt.Player) {
+        if (!player || !player.valid) {
+            return;
+        }
+
+        alt.emitAllClients('blackouton');
+        ActivatePowerJob.setPowerOn('false');
+        Athena.player.emit.message(player, `Power is Off`);
+    }
+
+    /**
+     * Turn Power On
+     * @param player
+     * @private
+     */
+    @command('poweron', LocaleController.get(COMMAND_POWER_ON, '/poweron'), PERMISSIONS.ADMIN)
+    private static powerOn(player: alt.Player) {
+        if (!player || !player.valid) {
+            return;
+        }
+
+        alt.emitAllClients('blackoutoff');
+        ActivatePowerJob.setPowerOn('true');
+        Athena.player.emit.message(player, `Power is On`);
+    }
+
     /**
      * Create In-World Job Location(s)
      * @static
      * @memberof Job
      */
     static init() {
-        /*ServerBlipController.append({
-            sprite: 480,
-            color: 5,
-            pos: START_POINT,
-            scale: 0.6,
-            shortRange: true,
-            text: 'Repair Power Outage',
-        });*/
+        if (CONFIG_BLIPS_ON) {
+            ServerBlipController.append({
+                sprite: 480,
+                color: 5,
+                pos: START_POINT,
+                scale: 0.6,
+                shortRange: true,
+                text: 'Repair Power Outage',
+            });
+        }
 
         ServerMarkerController.append({
             pos: START_POINT,
@@ -58,6 +98,27 @@ export class ActivatePowerJob {
         });
     }
 
+    static readBlackoutState() {
+        //1 = BlackOut is active
+        //alt.log("readBlackoutState is: ", BlackoutState);
+        if (BlackoutState === 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static setPowerOn(state: string) {
+        //alt.log("Power is now: ", state);
+        if (state === 'true') {
+            BlackoutState = 0;
+            return;
+        } else {
+            BlackoutState = 1;
+            return;
+        }
+    }
+
     /**
      * Call this to start the job. Usually called through interaction point.
      * @static
@@ -65,7 +126,7 @@ export class ActivatePowerJob {
      * @memberof Job
      */
     static async begin(player: alt.Player) {
-        if(BlackoutState === 0) {
+        if (BlackoutState === 0) {
             Athena.player.emit.notification(player, `~r~Power is already Online...`);
             return;
         }
@@ -100,16 +161,15 @@ export class ActivatePowerJob {
                     z: openSpot.pos.z + 1.5,
                 },
             },
-             blip: {
-                    text: 'Repair Spot',
-                    color: 2,
-                    pos: openSpot.pos,
-                    scale: 1,
-                    shortRange: true,
-                    sprite: 271,
-		    },
-            criteria:
-                JobEnums.ObjectiveCriteria.NO_DYING,
+            blip: {
+                text: 'Repair Spot',
+                color: 2,
+                pos: openSpot.pos,
+                scale: 1,
+                shortRange: true,
+                sprite: 271,
+            },
+            criteria: JobEnums.ObjectiveCriteria.NO_DYING,
             callbackOnStart: (player: alt.Player) => {
                 Athena.player.emit.message(player, '/quitjob - To stop this job.');
                 //Athena.player.emit.notification(player, `Get your Gloves`);
@@ -144,8 +204,7 @@ export class ActivatePowerJob {
                     shortRange: true,
                     sprite: 271,
                 },
-                criteria:
-                    JobEnums.ObjectiveCriteria.NO_DYING,
+                criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
                     Athena.player.emit.notification(player, `Repair`);
                     //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
@@ -186,11 +245,16 @@ export class ActivatePowerJob {
                     shortRange: true,
                     sprite: 271,
                 },
-                criteria:
-                    JobEnums.ObjectiveCriteria.NO_DYING,
+                criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
                     Athena.player.emit.notification(player, `Repair`);
-                    Athena.player.emit.animation(player, `amb@world_human_hammering@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.emit.animation(
+                        player,
+                        `amb@world_human_hammering@male@base`,
+                        'base',
+                        ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
+                        5000,
+                    );
                     //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
                 },
                 callbackOnFinish: (player: alt.Player) => {
@@ -203,7 +267,7 @@ export class ActivatePowerJob {
         const randomPoints3 = ActivatePowerJob.getRandomPoints3(TOTAL_DROP_OFFS);
         for (let i = 0; i < randomPoints3.length; i++) {
             const rPoint3 = randomPoints3[i];
-            const distance3 = distance2d(player.pos, rPoint3)
+            const distance3 = distance2d(player.pos, rPoint3);
             objectives.push({
                 description: '...',
                 type: JobEnums.ObjectiveType.WAYPOINT,
@@ -230,11 +294,16 @@ export class ActivatePowerJob {
                     shortRange: true,
                     sprite: 271,
                 },
-                criteria:
-                    JobEnums.ObjectiveCriteria.NO_DYING,
+                criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
                     Athena.player.emit.notification(player, `Repair`);
-                    Athena.player.emit.animation(player, `amb@world_human_hammering@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.emit.animation(
+                        player,
+                        `amb@world_human_hammering@male@base`,
+                        'base',
+                        ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
+                        5000,
+                    );
                     //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
                 },
                 callbackOnFinish: (player: alt.Player) => {
@@ -273,11 +342,16 @@ export class ActivatePowerJob {
                     shortRange: true,
                     sprite: 271,
                 },
-                criteria:
-                    JobEnums.ObjectiveCriteria.NO_DYING,
+                criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
                     Athena.player.emit.notification(player, `Repair`);
-                    Athena.player.emit.animation(player, `amb@world_human_hammering@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.emit.animation(
+                        player,
+                        `amb@world_human_hammering@male@base`,
+                        'base',
+                        ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
+                        5000,
+                    );
                     //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
                 },
                 callbackOnFinish: (player: alt.Player) => {
@@ -290,7 +364,7 @@ export class ActivatePowerJob {
         const randomPoints5 = ActivatePowerJob.getRandomPoints5(TOTAL_DROP_OFFS);
         for (let i = 0; i < randomPoints5.length; i++) {
             const rPoint5 = randomPoints5[i];
-            const distance5 = distance2d(player.pos, rPoint5)
+            const distance5 = distance2d(player.pos, rPoint5);
             objectives.push({
                 description: '...',
                 type: JobEnums.ObjectiveType.WAYPOINT,
@@ -317,11 +391,16 @@ export class ActivatePowerJob {
                     shortRange: true,
                     sprite: 271,
                 },
-                criteria:
-                    JobEnums.ObjectiveCriteria.NO_DYING,
+                criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
                     Athena.player.emit.notification(player, `Repair`);
-                    Athena.player.emit.animation(player, `amb@world_human_hammering@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.emit.animation(
+                        player,
+                        `amb@world_human_hammering@male@base`,
+                        'base',
+                        ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
+                        5000,
+                    );
                     //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
                 },
                 callbackOnFinish: (player: alt.Player) => {
@@ -334,7 +413,7 @@ export class ActivatePowerJob {
         const randomPoints6 = ActivatePowerJob.getRandomPoints6(TOTAL_DROP_OFFS);
         for (let i = 0; i < randomPoints6.length; i++) {
             const rPoint6 = randomPoints6[i];
-            const distance6 = distance2d(player.pos, rPoint6)
+            const distance6 = distance2d(player.pos, rPoint6);
             objectives.push({
                 description: '...',
                 type: JobEnums.ObjectiveType.WAYPOINT,
@@ -361,11 +440,16 @@ export class ActivatePowerJob {
                     shortRange: true,
                     sprite: 271,
                 },
-                criteria:
-                    JobEnums.ObjectiveCriteria.NO_DYING,
+                criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
                     Athena.player.emit.notification(player, `next Repair`);
-                    Athena.player.emit.animation(player, `amb@world_human_hammering@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.emit.animation(
+                        player,
+                        `amb@world_human_hammering@male@base`,
+                        'base',
+                        ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
+                        5000,
+                    );
                     //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
                 },
                 callbackOnFinish: (player: alt.Player) => {
@@ -405,14 +489,13 @@ export class ActivatePowerJob {
                     z: openSpot.pos.z + 1.5,
                 },
             },
-            criteria:
-                JobEnums.ObjectiveCriteria.NO_DYING,
+            criteria: JobEnums.ObjectiveCriteria.NO_DYING,
             callbackOnStart: (player: alt.Player) => {
                 Athena.player.emit.notification(player, `Bring your Tools back`);
             },
             callbackOnFinish: (player: alt.Player) => {
-                if(BlackoutState === 1){
-                    alt.emitAllClients("blackoutoff");
+                if (BlackoutState === 1) {
+                    alt.emitAllClients('blackoutoff');
                     BlackoutState = 0;
                     Athena.player.emit.notification(player, `Repair Job Done. Power is Online!`);
                     alt.log(`INFO: Power was Repaired...`);
@@ -447,7 +530,7 @@ export class ActivatePowerJob {
 
             try {
                 pointTest.destroy();
-            } catch (err) { }
+            } catch (err) {}
 
             if (spaceOccupied) {
                 continue;
