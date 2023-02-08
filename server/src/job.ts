@@ -16,11 +16,13 @@ import { command } from '@AthenaServer/decorators/commands';
 import { LocaleController } from '@AthenaShared/locale/locale';
 import { PERMISSIONS } from '@AthenaShared/flags/permissionFlags';
 import { CONFIG_BLIPS_ON, CONFIG_POWER_OFF_AT_SERVER_START } from './config';
+import { FarmingUtility } from '@AthenaPlugins/plugin-farmingsystem/server/src/utility';
 
 const COMMAND_POWER_OFF = 'Turn Power Off';
 const COMMAND_POWER_ON = 'Turn Power On';
 const START_POINT = { x: 2864.176513671875, y: 1510.896484375, z: 23.66752586364746 };
 const TOTAL_DROP_OFFS = 2;
+const TIME_PER_SPOT = 60000; //in milliseconds
 let BlackoutState = CONFIG_POWER_OFF_AT_SERVER_START;
 
 alt.on('playerConnect', (player) => {
@@ -172,7 +174,6 @@ export class ActivatePowerJob {
             criteria: JobEnums.ObjectiveCriteria.NO_DYING,
             callbackOnStart: (player: alt.Player) => {
                 Athena.player.emit.message(player, '/quitjob - To stop this job.');
-                //Athena.player.emit.notification(player, `Get your Gloves`);
             },
         });
 
@@ -206,13 +207,9 @@ export class ActivatePowerJob {
                 },
                 criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
-                    Athena.player.emit.notification(player, `Repair`);
-                    //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.emit.notification(player, `You got the Tools...`);
                 },
-                callbackOnFinish: (player: alt.Player) => {
-                    //Athena.player.emit.soundFrontend(player, 'Hack_Success', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS');
-                    Athena.player.emit.notification(player, `Repaired`);
-                },
+                callbackOnFinish: (player: alt.Player) => {},
             });
         }
 
@@ -247,20 +244,28 @@ export class ActivatePowerJob {
                 },
                 criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
-                    Athena.player.emit.notification(player, `Repair`);
+                    Athena.player.emit.notification(player, `SPOT: 1`);
+                    Athena.player.safe.setPosition(player, player.pos.x, player.pos.y, player.pos.z);
                     Athena.player.emit.animation(
                         player,
                         `amb@world_human_hammering@male@base`,
                         'base',
                         ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
-                        5000,
+                        TIME_PER_SPOT,
                     );
-                    //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.set.frozen(player, true);
+                    ActivatePowerJob.getProgressBar(player);
+                    alt.setTimeout(async () => {
+                        Athena.player.set.frozen(player, false);
+                        Athena.player.emit.soundFrontend(
+                            player,
+                            'Hack_Success',
+                            'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS',
+                        );
+                        Athena.player.emit.notification(player, `go to the next spot`);
+                    }, TIME_PER_SPOT);
                 },
-                callbackOnFinish: (player: alt.Player) => {
-                    Athena.player.emit.soundFrontend(player, 'Hack_Success', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS');
-                    Athena.player.emit.notification(player, `You did the Repair`);
-                },
+                callbackOnFinish: (player: alt.Player) => {},
             });
         }
 
@@ -296,20 +301,28 @@ export class ActivatePowerJob {
                 },
                 criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
-                    Athena.player.emit.notification(player, `Repair`);
+                    Athena.player.emit.notification(player, `SPOT: 2`);
+                    Athena.player.safe.setPosition(player, player.pos.x, player.pos.y, player.pos.z);
                     Athena.player.emit.animation(
                         player,
                         `amb@world_human_hammering@male@base`,
                         'base',
                         ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
-                        5000,
+                        TIME_PER_SPOT,
                     );
-                    //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.set.frozen(player, true);
+
+                    alt.setTimeout(async () => {
+                        Athena.player.set.frozen(player, false);
+                        Athena.player.emit.soundFrontend(
+                            player,
+                            'Hack_Success',
+                            'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS',
+                        );
+                        Athena.player.emit.notification(player, `go to the next spot`);
+                    }, TIME_PER_SPOT);
                 },
-                callbackOnFinish: (player: alt.Player) => {
-                    Athena.player.emit.soundFrontend(player, 'Hack_Success', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS');
-                    Athena.player.emit.notification(player, `You did the Repair`);
-                },
+                callbackOnFinish: (player: alt.Player) => {},
             });
         }
 
@@ -344,20 +357,28 @@ export class ActivatePowerJob {
                 },
                 criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
-                    Athena.player.emit.notification(player, `Repair`);
+                    Athena.player.emit.notification(player, `SPOT: 3`);
+                    Athena.player.safe.setPosition(player, player.pos.x, player.pos.y, player.pos.z);
                     Athena.player.emit.animation(
                         player,
                         `amb@world_human_hammering@male@base`,
                         'base',
                         ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
-                        5000,
+                        TIME_PER_SPOT,
                     );
-                    //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.set.frozen(player, true);
+                    ActivatePowerJob.getProgressBar(player);
+                    alt.setTimeout(async () => {
+                        Athena.player.set.frozen(player, false);
+                        Athena.player.emit.soundFrontend(
+                            player,
+                            'Hack_Success',
+                            'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS',
+                        );
+                        Athena.player.emit.notification(player, `go to the next spot`);
+                    }, TIME_PER_SPOT);
                 },
-                callbackOnFinish: (player: alt.Player) => {
-                    Athena.player.emit.soundFrontend(player, 'Hack_Success', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS');
-                    Athena.player.emit.notification(player, `You did the Repair`);
-                },
+                callbackOnFinish: (player: alt.Player) => {},
             });
         }
 
@@ -393,20 +414,28 @@ export class ActivatePowerJob {
                 },
                 criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
-                    Athena.player.emit.notification(player, `Repair`);
+                    Athena.player.emit.notification(player, `SPOT: 4`);
+                    Athena.player.safe.setPosition(player, player.pos.x, player.pos.y, player.pos.z);
                     Athena.player.emit.animation(
                         player,
                         `amb@world_human_hammering@male@base`,
                         'base',
                         ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
-                        5000,
+                        TIME_PER_SPOT,
                     );
-                    //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.set.frozen(player, true);
+
+                    alt.setTimeout(async () => {
+                        Athena.player.set.frozen(player, false);
+                        Athena.player.emit.soundFrontend(
+                            player,
+                            'Hack_Success',
+                            'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS',
+                        );
+                        Athena.player.emit.notification(player, `go to the next spot`);
+                    }, TIME_PER_SPOT);
                 },
-                callbackOnFinish: (player: alt.Player) => {
-                    Athena.player.emit.soundFrontend(player, 'Hack_Success', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS');
-                    Athena.player.emit.notification(player, `You did the Repair`);
-                },
+                callbackOnFinish: (player: alt.Player) => {},
             });
         }
 
@@ -442,19 +471,28 @@ export class ActivatePowerJob {
                 },
                 criteria: JobEnums.ObjectiveCriteria.NO_DYING,
                 callbackOnStart: (player: alt.Player) => {
-                    Athena.player.emit.notification(player, `next Repair`);
+                    Athena.player.emit.notification(player, `SPOT: 5`);
+                    Athena.player.safe.setPosition(player, player.pos.x, player.pos.y, player.pos.z);
                     Athena.player.emit.animation(
                         player,
                         `amb@world_human_hammering@male@base`,
                         'base',
                         ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT,
-                        5000,
+                        TIME_PER_SPOT,
                     );
-                    //Athena.player.emit.animation(player, `amb@world_human_gardener_plant@male@base`, 'base', ANIMATION_FLAGS.NORMAL | ANIMATION_FLAGS.REPEAT, 5000);
+                    Athena.player.set.frozen(player, true);
+                    ActivatePowerJob.getProgressBar(player);
+                    alt.setTimeout(async () => {
+                        Athena.player.set.frozen(player, false);
+                        Athena.player.emit.soundFrontend(
+                            player,
+                            'Hack_Success',
+                            'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS',
+                        );
+                    }, TIME_PER_SPOT);
                 },
                 callbackOnFinish: (player: alt.Player) => {
-                    Athena.player.emit.soundFrontend(player, 'TOGGLE_ON', 'HUD_FRONTEND_DEFAULT_SOUNDSET');
-                    Athena.player.emit.notification(player, `Power Repaired`);
+                    Athena.player.emit.notification(player, `Power Repaired bring your tools back!`);
                 },
             });
         }
@@ -540,6 +578,18 @@ export class ActivatePowerJob {
         }
 
         return null;
+    }
+
+    static getProgressBar(player: alt.Player) {
+        Athena.player.emit.createProgressBar(player, {
+            uid: Date.now().toString(),
+            color: new alt.RGBA(0, 255, 0, 200),
+            distance: 10,
+            milliseconds: TIME_PER_SPOT,
+            position: player.pos,
+            text: 'Repairing...',
+            percentageEnabled: true,
+        });
     }
 
     /**
