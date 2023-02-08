@@ -7,6 +7,11 @@ After the Power is Back online, the Job cant be done again (Why do you want to R
 
 Have Fun
 
+# Updates:
+- Progress Bar
+- Timer (server/src/job.ts Line 25 TIME_PER_SPOT) how long each Spot takes
+- Freeze Player for TIME_PER_SPOT time
+
 # Commands
 
 -   poweron = Activate City Power
